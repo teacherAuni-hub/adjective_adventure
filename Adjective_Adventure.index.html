@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adjective Adventure!</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#dff6ff,#fff4d6);color:#263238}
+  .wrap{max-width:850px;margin:auto;padding:20px}
+  .card{background:white;border-radius:24px;padding:28px;box-shadow:0 8px 25px #0001}
+  h1{text-align:center;color:#5b45c9;margin:5px 0}
+  .subtitle{text-align:center;margin:0 0 20px}
+  .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .pill{background:#f0ecff;padding:10px 16px;border-radius:999px;font-weight:bold}
+  .progress{height:12px;background:#eee;border-radius:20px;overflow:hidden;margin-bottom:20px}
+  #bar{height:100%;width:0;background:#6c5ce7;transition:.3s}
+  .question{text-align:center;font-size:28px;font-weight:bold;margin:18px 0}
+  .visual{font-size:85px;text-align:center;min-height:105px;display:flex;align-items:center;justify-content:center}
+  .choices{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:20px}
+  button{border:0;border-radius:16px;padding:16px;font-size:20px;font-weight:bold;cursor:pointer;background:#f5f5f5;transition:.15s}
+  button:hover{transform:translateY(-2px);background:#e9e5ff}
+  button.correct{background:#b9f6ca}
+  button.wrong{background:#ffcdd2}
+  #feedback{text-align:center;font-size:22px;font-weight:bold;min-height:32px;margin:18px 0}
+  .next{display:block;margin:10px auto;background:#6c5ce7;color:white;padding:14px 28px}
+  .hidden{display:none}
+  .start{background:#6c5ce7;color:white;display:block;margin:20px auto;padding:16px 35px}
+  .restart{background:#ffb703;color:#222}
+  .scorebig{text-align:center;font-size:52px;color:#6c5ce7}
+  .tips{background:#fff8df;border-radius:16px;padding:15px;margin-top:20px}
+  @media(max-width:600px){.choices{grid-template-columns:1fr}.question{font-size:23px}.visual{font-size:70px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="startScreen">
+    <h1>🎨 Adjective Adventure!</h1>
+    <p class="subtitle">Learn adjectives, earn points, and become an adjective champion! 🏆</p>
+    <div class="tips">
+      <b>Words in this game:</b><br>
+      Colours: red, blue, yellow, green, orange, purple<br>
+      Describing words: long, short, big, small, ugly, beautiful, old, new
+    </div>
+    <button class="start" onclick="startGame()">▶ Start Game</button>
+  </div>
+
+  <div class="card hidden" id="gameScreen">
+    <div class="top">
+      <div class="pill">⭐ Score: <span id="score">0</span></div>
+      <div class="pill">Question <span id="num">1</span>/20</div>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="visual" id="visual"></div>
+    <div class="question" id="question"></div>
+    <div class="choices" id="choices"></div>
+    <div id="feedback"></div>
+    <button class="next hidden" id="nextBtn" onclick="nextQuestion()">Next ➜</button>
+  </div>
+
+  <div class="card hidden" id="endScreen">
+    <h1>🎉 Great Job!</h1>
+    <div class="scorebig"><span id="finalScore"></span>/20</div>
+    <p id="message" style="text-align:center;font-size:22px"></p>
+    <button class="start restart" onclick="startGame()">🔄 Play Again</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+ {v:"🍎",q:"The apple is...",a:"red",c:["red","blue","green","purple"]},
+ {v:"🫐",q:"The berry is...",a:"blue",c:["yellow","blue","orange","red"]},
+ {v:"🍌",q:"The banana is...",a:"yellow",c:["green","yellow","purple","blue"]},
+ {v:"🥦",q:"The broccoli is...",a:"green",c:["orange","green","red","purple"]},
+ {v:"🍊",q:"The orange is...",a:"orange",c:["blue","orange","yellow","green"]},
+ {v:"🍇",q:"The grapes are...",a:"purple",c:["purple","red","yellow","blue"]},
+ {v:"🐘",q:"The elephant is...",a:"big",c:["small","big","short","new"]},
+ {v:"🐜",q:"The ant is...",a:"small",c:["beautiful","big","small","long"]},
+ {v:"🦒",q:"The giraffe has a ___ neck.",a:"long",c:["short","long","small","old"]},
+ {v:"🐢",q:"The turtle has ___ legs.",a:"short",c:["long","short","new","beautiful"]},
+ {v:"🏰",q:"The castle is very...",a:"old",c:["old","small","short","new"]},
+ {v:"📱",q:"This phone is...",a:"new",c:["old","long","new","ugly"]},
+ {v:"🌸",q:"The flower is...",a:"beautiful",c:["ugly","small","beautiful","old"]},
+ {v:"👾",q:"The monster looks...",a:"ugly",c:["beautiful","ugly","new","red"]},
+ {v:"🐍",q:"The snake is...",a:"long",c:["short","big","long","new"]},
+ {v:"✏️",q:"The pencil is...",a:"short",c:["beautiful","short","old","purple"]},
+ {v:"🚗",q:"The car is...",a:"red",c:["red","green","yellow","blue"]},
+ {v:"🎈",q:"The balloon is...",a:"big",c:["big","old","ugly","short"]},
+ {v:"🦋",q:"The butterfly is...",a:"beautiful",c:["old","beautiful","new","long"]},
+ {v:"🏠",q:"The house is...",a:"new",c:["new","small","short","ugly"]}
+];
+
+let current=0,score=0,answered=false;
+
+function startGame(){
+ current=0; score=0;
+ document.getElementById("startScreen").classList.add("hidden");
+ document.getElementById("endScreen").classList.add("hidden");
+ document.getElementById("gameScreen").classList.remove("hidden");
+ showQuestion();
+}
+function showQuestion(){
+ answered=false;
+ const x=questions[current];
+ document.getElementById("score").textContent=score;
+ document.getElementById("num").textContent=current+1;
+ document.getElementById("bar").style.width=((current)/questions.length*100)+"%";
+ document.getElementById("visual").textContent=x.v;
+ document.getElementById("question").textContent=x.q;
+ document.getElementById("feedback").textContent="";
+ document.getElementById("nextBtn").classList.add("hidden");
+ const box=document.getElementById("choices");
+ box.innerHTML="";
+ [...x.c].sort(()=>Math.random()-0.5).forEach(choice=>{
+   const b=document.createElement("button");
+   b.textContent=choice;
+   b.onclick=()=>answer(b,choice,x.a);
+   box.appendChild(b);
+ });
+}
+function answer(btn,choice,correct){
+ if(answered)return;
+ answered=true;
+ const buttons=document.querySelectorAll("#choices button");
+ buttons.forEach(b=>{if(b.textContent===correct)b.classList.add("correct")});
+ if(choice===correct){
+   score++;
+   btn.classList.add("correct");
+   document.getElementById("feedback").textContent="✅ Correct! Well done!";
+ }else{
+   btn.classList.add("wrong");
+   document.getElementById("feedback").textContent="💡 Good try! The answer is “"+correct+"”.";
+ }
+ document.getElementById("score").textContent=score;
+ document.getElementById("nextBtn").classList.remove("hidden");
+}
+function nextQuestion(){
+ current++;
+ if(current>=questions.length) endGame();
+ else showQuestion();
+}
+function endGame(){
+ document.getElementById("gameScreen").classList.add("hidden");
+ document.getElementById("endScreen").classList.remove("hidden");
+ document.getElementById("finalScore").textContent=score;
+ let m=score===20?"🏆 Amazing! You are an Adjective Champion!":
+       score>=16?"🌟 Excellent work!":
+       score>=12?"👏 Good job! Keep practising!":
+       "💪 Nice try! Play again and improve your score!";
+ document.getElementById("message").textContent=m;
+}
+</script>
+</body>
+</html>
